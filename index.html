@@ -1,42 +1,160 @@
-
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Kurd Movie Player</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- دیزاینی Plyr -->
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-  <style>
-    body { margin: 0; background: #000; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .plyr { width: 100%; height: 100%; }
-    /* لێرە دەتوانی ڕەنگەکان بگۆڕیت */
-    :root { --plyr-color-main: #ff0000; } 
-  </style>
-</head>
-<body>
-
-  <video id="player" playsinline controls>
-    <source src="" type="video/mp4" />
-  </video>
-
-  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-  <script>
-    // ئەم کۆدە لینکەکە لە ئەدرێس بار وەردەگرێت
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoUrl = urlParams.get('url'); 
-    
-    if(videoUrl){
-        const videoElement = document.getElementById('player');
-        videoElement.querySelector('source').src = videoUrl;
-        
-        const player = new Plyr('#player', {
-            autoplay: false,
-            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen', 'settings']
-        });
-    } else {
-        document.body.innerHTML = '<h3 style="color:white;text-align:center">لینک هەڵەیە</h3>';
+<!-- سەرەتا ستایلەکان لێرە دادەنرێن -->
+<style>
+    :root {
+        --plyr-color-main: #e50914;
     }
-  </script>
-</body>
-</html>
+    #player-container {
+        position: fixed; 
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        z-index: 9999999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #player-container .plyr {
+        width: 100%;
+        height: 100%;
+        max-width: 95vw;
+        max-height: 95vh;
+    }
+    #player-container .ad-overlay {
+        position: absolute;
+        bottom: 70px; 
+        right: 20px; 
+        z-index: 10;
+        display: none; 
+        font-family: sans-serif;
+    }
+    #player-container #skip-ad-button {
+        background-color: rgba(0,0,0,0.7);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.5);
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    #player-container #skip-ad-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+    #player-container.ad-mode .plyr__progress input {
+        pointer-events: none;
+    }
+</style>
+
+<!-- دواتر، چوارچێوە و پلەیەرەکە -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+<div id="player-container">
+    <video id="player" playsinline controls 
+           poster="https://i.postimg.cc/pybMsYh3/0x0.webp"></video>
+    
+    <div class="ad-overlay">
+        <button id="skip-ad-button" disabled>تکایە چاوەڕێ بکە...</button>
+    </div>
+</div>
+
+<!-- لە کۆتاییدا سکریپتەکان -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js" defer></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var wrapper = document.querySelector('#player-container');
+        var playerElement = document.getElementById('player');
+        if (!playerElement) return;
+
+        var player = new Plyr(playerElement, {
+            settings: ['quality', 'speed'],
+            keyboard: { focused: true, global: true }
+        });
+
+        // --- شوێنی گۆڕانکاری ڤیدیۆکان ---
+        
+        // تێبینی: دڵنیابەرەوە AD_VIDEO_URL پێشتر پێناسە کرابێت یان لینکەکەی لێرە دابنێیت
+        var adVideoSource = { type: 'video', sources: [{ src: typeof AD_VIDEO_URL !== 'undefined' ? AD_VIDEO_URL : '', type: 'video/mp4' }] };
+        
+        var mainVideoSource = {
+            type: 'video', title: 'ڤیدیۆی سەرەکی',
+            sources: [
+                { src: 'https://ia800207.us.archive.org/15/items/in-good-hands-2-2024-1080p-blluray/In.Good.Hands.2.2024.1080p.blluray.mp4', type: 'video/mp4', size: 1080 },
+                { src: 'https://ia800207.us.archive.org/15/items/in-good-hands-2-2024-1080p-blluray/In.Good.Hands.2.2024.1080p.blluray.mp4', type: 'video/mp4', size: 720 },
+            ],
+            poster: 'https://i.postimg.cc/pybMsYh3/0x0.webp',
+        };
+        // ---------------------------------
+        
+        var skipButton = document.querySelector('#player-container #skip-ad-button');
+        var adOverlay = document.querySelector('#player-container .ad-overlay');
+        var isAdPlaying = false;
+        var adPlayedOnce = false;
+        var countdownInterval = null;
+
+        var plyrContainer = player.elements.container;
+        if (plyrContainer) {
+            plyrContainer.appendChild(adOverlay);
+        }
+
+        function switchToMainVideo() {
+            if (!isAdPlaying) return;
+            
+            isAdPlaying = false;
+            clearInterval(countdownInterval);
+            wrapper.classList.remove('ad-mode');
+            adOverlay.style.display = 'none';
+            
+            player.source = mainVideoSource;
+            player.play();
+        }
+
+        player.on('play', function() {
+            if (!adPlayedOnce) {
+                adPlayedOnce = true;
+                isAdPlaying = true;
+                
+                wrapper.classList.add('ad-mode');
+                adOverlay.style.display = 'block';
+
+                player.source = adVideoSource;
+                
+                player.play();
+                
+                var countdown = 5;
+                skipButton.textContent = `پەڕینەوە دوای (${countdown})`;
+                skipButton.disabled = true;
+            }
+        });
+
+        player.on('playing', function() {
+            if (isAdPlaying && !countdownInterval) {
+                var countdown = parseInt(skipButton.textContent.match(/\d+/)) || 5;
+                
+                countdownInterval = setInterval(function() {
+                    countdown--;
+                    if (countdown > 0) {
+                        skipButton.textContent = `پەڕینەوە دوای (${countdown})`;
+                    } else {
+                        clearInterval(countdownInterval);
+                        skipButton.textContent = 'پەڕینەوە لە ڕیکلام »';
+                        skipButton.disabled = false;
+                    }
+                }, 1000);
+            }
+        });
+
+        player.on('pause', function() {
+            if (isAdPlaying) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        });
+
+        player.on('ended', function() {
+            if (isAdPlaying) switchToMainVideo();
+        });
+
+        skipButton.addEventListener('click', switchToMainVideo);
+    });
+</script>

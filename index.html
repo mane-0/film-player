@@ -1,50 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Player</title>
-    <!-- ستایلی Plyr -->
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <style>
-        body { margin: 0; padding: 0; background-color: #000; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        video { width: 100%; height: 100%; }
-        /* لابردنی دیزاینە زیادەکان */
-        .plyr { width: 100%; height: 100%; }
-        /* ڕەنگی سوور */
-        :root { --plyr-color-main: #e50914; }
-    </style>
+  <meta charset="utf-8">
+  <title>Kurd Movie Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- دیزاینی Plyr -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <style>
+    body { margin: 0; background: #000; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .plyr { width: 100%; height: 100%; }
+    /* لێرە دەتوانی ڕەنگەکان بگۆڕیت */
+    :root { --plyr-color-main: #ff0000; } 
+  </style>
 </head>
 <body>
 
-<!-- پلەیەرەکە -->
-<video id="player" playsinline controls crossorigin></video>
+  <video id="player" playsinline controls>
+    <source src="" type="video/mp4" />
+  </video>
 
-<!-- سکریپت -->
-<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-<script>
-    // وەرگرتنی لینکەکە
+  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+  <script>
+    // ئەم کۆدە لینکەکە لە ئەدرێس بار وەردەگرێت
     const urlParams = new URLSearchParams(window.location.search);
-    const videoUrl = urlParams.get('url');
-
-    const videoElement = document.getElementById('player');
-
-    if (videoUrl) {
-        // دروستکردنی سۆرس بۆ ڤیدیۆکە (باشترە بۆ Archive.org)
-        const source = document.createElement('source');
-        source.src = videoUrl;
-        source.type = 'video/mp4';
-        videoElement.appendChild(source);
-
-        // کارپێکردن
-        const player = new Plyr(videoElement, {
-            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
-            autoplay: false
+    const videoUrl = urlParams.get('url'); 
+    
+    if(videoUrl){
+        const videoElement = document.getElementById('player');
+        videoElement.querySelector('source').src = videoUrl;
+        
+        const player = new Plyr('#player', {
+            autoplay: false,
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen', 'settings']
         });
     } else {
-        document.body.innerHTML = '<h2 style="color:white;font-family:sans-serif;">Please add ?url=LINK</h2>';
+        document.body.innerHTML = '<h3 style="color:white;text-align:center">لینک هەڵەیە</h3>';
     }
-</script>
-
+  </script>
 </body>
 </html>

@@ -1,99 +1,48 @@
 <!DOCTYPE html>
-<html lang="ckb" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Movie Player</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <!-- دیزاینی Plyr -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <!-- ستایلی Plyr -->
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    
     <style>
-        /* ڕێکخستنی گشتی بۆ پڕکردنەوەی شاشە */
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: #000; 
-            overflow: hidden; 
-            font-family: sans-serif; 
-        }
-        
-        #player-container {
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-        }
-
-        /* قەبارەی پلەیەرەکە */
-        .plyr {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* ڕەنگی پلەیەرەکە (سوور) */
-        :root {
-            --plyr-color-main: #e50914;
-        }
-
-        /* پەیامی هەڵە */
-        .error-msg {
-            color: white;
-            text-align: center;
-            display: none; /* سەرەتا دیار نییە */
-        }
+        body { margin: 0; padding: 0; background-color: #000; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; }
+        /* لابردنی دیزاینە زیادەکان */
+        .plyr { width: 100%; height: 100%; }
+        /* ڕەنگی سوور */
+        :root { --plyr-color-main: #e50914; }
     </style>
 </head>
 <body>
 
-<div id="player-container">
-    <video id="player" playsinline controls crossorigin poster="https://i.postimg.cc/pybMsYh3/0x0.webp"></video>
-    
-    <div id="error-message" class="error-msg">
-        <h3>تکایە لینک دابنێ!</h3>
-        <p>Example: ?url=YOUR_VIDEO_LINK</p>
-    </div>
-</div>
+<!-- پلەیەرەکە -->
+<video id="player" playsinline controls crossorigin></video>
 
-<!-- سکریپتی Plyr -->
+<!-- سکریپت -->
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-
 <script>
-    // 1. وەرگرتنی لینکەکە لە ناونیشانەوە
+    // وەرگرتنی لینکەکە
     const urlParams = new URLSearchParams(window.location.search);
     const videoUrl = urlParams.get('url');
-    
+
     const videoElement = document.getElementById('player');
-    const errorDiv = document.getElementById('error-message');
 
-    // 2. پشکنین: ئایا لینک هەیە؟
     if (videoUrl) {
-        // ئەگەر لینک هەبوو، دەیخەینە ناو ڤیدیۆکە
-        videoElement.src = videoUrl;
+        // دروستکردنی سۆرس بۆ ڤیدیۆکە (باشترە بۆ Archive.org)
+        const source = document.createElement('source');
+        source.src = videoUrl;
+        source.type = 'video/mp4';
+        videoElement.appendChild(source);
 
-        // کارپێکردنی پلەیەرەکە
+        // کارپێکردن
         const player = new Plyr(videoElement, {
-            controls: [
-                'play-large', // دوگمەی گەورەی ناوەڕاست
-                'play',       // دوگمەی خوارەوە
-                'progress',   // هێڵی کات
-                'current-time', // کات
-                'mute',       // بێدەنگ کردن
-                'volume',     // دەنگ
-                'settings',   // کوالێتی و خێرایی
-                'fullscreen'  // تەواوی شاشە
-            ],
-            keyboard: { focused: true, global: true }, // بۆ کۆنترۆڵ بە کیبۆرد
-            autoplay: false // با خۆی دەست پێ نەکات (باشترە بۆ مۆبایل)
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'settings', 'fullscreen'],
+            autoplay: false
         });
-
     } else {
-        // ئەگەر لینک نەبوو، پلەیەرەکە دەشارینەوە و پەیام نیشان دەدەین
-        videoElement.style.display = 'none';
-        errorDiv.style.display = 'block';
+        document.body.innerHTML = '<h2 style="color:white;font-family:sans-serif;">Please add ?url=LINK</h2>';
     }
 </script>
 

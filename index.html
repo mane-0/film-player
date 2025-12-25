@@ -1,1 +1,42 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kurd Movie Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- دیزاینی Plyr -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <style>
+    body { margin: 0; background: #000; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .plyr { width: 100%; height: 100%; }
+    /* لێرە دەتوانی ڕەنگەکان بگۆڕیت */
+    :root { --plyr-color-main: #ff0000; } 
+  </style>
+</head>
+<body>
+
+  <video id="player" playsinline controls>
+    <source src="https://pixeldrain.com/api/file/jSUbppc8" type="video/mp4" />
+  </video>
+
+  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+  <script>
+    // ئەم کۆدە لینکەکە لە ئەدرێس بار وەردەگرێت
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoUrl = urlParams.get('url'); 
+    
+    if(videoUrl){
+        const videoElement = document.getElementById('player');
+        videoElement.querySelector('source').src = videoUrl;
+        
+        const player = new Plyr('#player', {
+            autoplay: false,
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen', 'settings']
+        });
+    } else {
+        document.body.innerHTML = '<h3 style="color:white;text-align:center">لینک هەڵەیە</h3>';
+    }
+  </script>
+</body>
+</html>

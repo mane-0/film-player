@@ -2,172 +2,190 @@
 <html lang="ckb" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Kurd Movie Player</title>
+    <title>Video Player</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Plyr CSS -->
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     
     <style>
-        body { margin: 0; background: #000; overflow: hidden; height: 100vh; font-family: sans-serif; }
+        /* ڕێکخستنی گشتی */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         
-        :root { --plyr-color-main: #e50914; }
-
         #player-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
         }
-        #player-container .plyr { width: 100%; height: 100%; }
 
-        /* ستایلی دوگمەی پەڕینەوە */
-        .ad-overlay {
-            position: absolute; bottom: 60px; right: 20px; z-index: 50; display: none;
+        /* --- ستایلی دوگمەی پەڕینەوە --- */
+        .skip-overlay {
+            position: absolute;
+            bottom: 80px; /* بەرزتر کراوەتەوە بۆ ئەوەی نەکەوێتە ژێر کۆنترۆڵەکان */
+            right: 20px; 
+            z-index: 999999 !important; /* زۆر گرنگە: بۆ ئەوەی لەسەرووی هەموو شتێک بێت */
+            display: none; /* سەرەتا دیار نییە */
         }
-        #skip-ad-button {
-            background-color: rgba(0, 0, 0, 0.8); color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px;
-            pointer-events: auto; /* دڵنیابوونەوە لەوەی دادەگیرێت */
+
+        #btn-skip {
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto; /* دڵنیابوونەوە لەوەی کلیک وەردەگرێت */
         }
-        #skip-ad-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        #btn-skip:hover { background-color: rgba(255, 0, 0, 0.8); border-color: red; }
+        #btn-skip:disabled { opacity: 0.5; cursor: wait; background-color: rgba(0,0,0,0.5); border-color: gray; }
+        #btn-skip:disabled:hover { background-color: rgba(0,0,0,0.5); }
+
+        /* --- شاردنەوەی کۆنترۆڵەکان کاتی ڕیکلام --- */
+        /* کاتێک کلاس-ی ad-mode زیاد دەکرێت، هێڵی کات دەشارێتەوە */
+        .ad-mode .plyr__controls__item.plyr__progress__container,
+        .ad-mode .plyr__controls__item.plyr__time,
+        .ad-mode .plyr__menu {
+            display: none !important;
+        }
         
-        /* ---- گرنگ: شاردنەوەی هێڵی کات لە کاتی ڕیکلام ---- */
-        /* تەنها هێڵی کات و سیتیەکان دەشارینەوە، نەک دوگمەی پلی */
-        .ad-active .plyr__progress { display: none !important; }
-        .ad-active .plyr__time { display: none !important; }
-        .ad-active .plyr__menu { display: none !important; }
-        /* ------------------------------------------------ */
-
         /* پەیامی هەڵە */
-        .error-msg { color: white; text-align: center; direction: ltr; }
+        .error-screen { color: white; text-align: center; display: none; }
     </style>
 </head>
 <body>
 
 <div id="player-container">
-    <video id="player" playsinline controls crossorigin poster="https://i.postimg.cc/pybMsYh3/0x0.webp"></video>
+    <video id="player" playsinline controls crossorigin></video>
     
-    <div class="ad-overlay">
-        <button id="skip-ad-button" disabled>تکایە چاوەڕێ بکە...</button>
+    <!-- شوێنی دوگمەکە -->
+    <div class="skip-overlay">
+        <button id="btn-skip" disabled>ئامادەکردن...</button>
+    </div>
+    
+    <div id="error-msg" class="error-screen">
+        <h3>تکایە لینک دابنێ (?url=...)</h3>
     </div>
 </div>
 
+<!-- Plyr JS -->
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-<script>
-    // ==============================================================
-    // لینکی ڕیکلامەکەت لێرە دابنێ
-    const AD_URL = 'https://ia601007.us.archive.org/7/items/kurdflix-intro/IMG_1015.mp4';
-    // ==============================================================
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const MOVIE_URL = urlParams.get('url');
-    
+<script>
+    // =========================================================
+    // ١. لێرە لینکی ڕیکلامەکەی خۆت دابنێ
+    const MY_AD_URL = 'https://ia601007.us.archive.org/7/items/kurdflix-intro/IMG_1015.mp4';
+    // =========================================================
+
+    // وەرگرتنی توخمی HTML
     const videoElement = document.getElementById('player');
     const container = document.getElementById('player-container');
-    const skipBtn = document.getElementById('skip-ad-button');
-    const adOverlay = document.querySelector('.ad-overlay');
+    const skipOverlay = document.querySelector('.skip-overlay');
+    const skipBtn = document.getElementById('btn-skip');
+    const errorMsg = document.getElementById('error-msg');
+
+    // وەرگرتنی لینکی فیلم لە URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const MOVIE_URL = urlParams.get('url');
+
+    // --- لۆجیکی سەرەکی ---
+    
+    let currentState = 'ad'; // ad = ڕیکلام، movie = فیلم
+    let timerInterval;
 
     if (!MOVIE_URL) {
-        document.body.innerHTML = '<div class="error-msg"><h2>No URL Provided</h2><p>Add ?url=YOUR_LINK at the end.</p></div>';
+        // ئەگەر لینک نەبوو، ڕیکلام و ڤیدیۆ لادەبەین و هەڵە نیشان دەدەین
+        videoElement.style.display = 'none';
+        errorMsg.style.display = 'block';
     } else {
-        // فیلمەکە دادەنێین بەڵام هێشتا لێی نادەین
-        videoElement.src = MOVIE_URL;
+        // هەنگاوی یەکەم: بارکردنی ڕیکلامەکە وەک یەکەم ڤیدیۆ
+        // تێبینی: ئێمە یەکسەر ڕیکلامەکە دادەنێین بۆ ئەوەی کێشە دروست نەبێت
+        videoElement.src = MY_AD_URL;
+        container.classList.add('ad-mode'); // شاردنەوەی هێڵی کات
     }
 
-    // ڕێکخستنی پلەیەر
+    // دروستکردنی Plyr
     const player = new Plyr(videoElement, {
         controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen', 'settings'],
-        keyboard: { focused: true, global: true },
-        // ئەمە گرنگە بۆ ئەوەی ڕێگە بدات لەسەر مۆبایل داگیرێت
-        clickToPlay: true 
+        autoplay: false,
+        clickToPlay: true,
+        keyboard: { focused: true, global: true }
     });
 
-    let adHasBeenPlayed = false;
-    let isAdMode = false;
-    let countdownInterval;
-
-    // کاتێک بەکارهێنەر یەکەم جار پلەی دەکات
-    player.on('play', function(event) {
-        // ئەگەر ڕیکلامەکە هێشتا لێنەدراوە و لینکی فیلمەکەش هەیە
-        if (!adHasBeenPlayed && MOVIE_URL) {
+    // کاتێک ڤیدیۆ (ڕیکلام) دەست پێ دەکات
+    player.on('play', () => {
+        if (currentState === 'ad') {
+            // نیشاندانی دوگمەی پەڕینەوە
+            skipOverlay.style.display = 'block';
             
-            // دەستبەجێ فیلمەکە ڕادەگرین پێش ئەوەی دەست پێ بکات
-            // player.pause() لێرە بەکارناهێنین چونکە ڕەنگە کێشە دروست بکات
-            // بەڵکو ڕاستەوخۆ سۆرسەکە دەگۆڕین
-            
-            adHasBeenPlayed = true; // نیشانەیەک کە ڕیکلامەکە دەستی پێکرد
-            isAdMode = true;
-
-            // گۆڕینی دیزاین بۆ دۆخی ڕیکلام (شاردنەوەی هێڵی کات)
-            container.classList.add('ad-active');
-            adOverlay.style.display = 'block';
-
-            // گۆڕینی ڤیدیۆ بۆ ڕیکلام
-            // گرنگ: ئێمە src دەگۆڕین و یەکسەر فەرمانی play دەدەین
-            videoElement.src = AD_URL;
-            
-            // چاوەڕێ دەکەین تا ڤیدیۆکە ئامادە دەبێت ئینجا پلەی دەکەین
-            videoElement.load();
-            var playPromise = videoElement.play();
-
-            if (playPromise !== undefined) {
-                playPromise.then(_ => {
-                    // ئۆتۆماتیکی دەستی پێکرد
-                    startCountdown(5);
-                }).catch(error => {
-                    // ئەگەر براوسەرەکە ڕێگەی نەدا ئۆتۆماتیکی کار بکات
-                    // کێشە نییە، بەکارهێنەر دەتوانێت دوگمەی Play دابگرێت چونکە قوفڵمان نەکردووە
-                    startCountdown(5);
-                });
+            // ئەگەر تایمەر پێشتر کاری نەکردبێت، کاری پێ بکە
+            if (!timerInterval) {
+                startCountdown(5); // ٥ چرکە
             }
         }
     });
 
     // کاتێک ڕیکلام تەواو دەبێت
     player.on('ended', () => {
-        if (isAdMode) {
-            skipAd();
+        if (currentState === 'ad') {
+            loadMovie();
         }
     });
 
+    // فەنکشنی ژماردنی کات (Countdown)
     function startCountdown(seconds) {
         let counter = seconds;
-        skipBtn.textContent = `پەڕینەوە دوای (${counter})`;
+        skipBtn.innerText = `پەڕینەوە دوای (${counter})`;
         skipBtn.disabled = true;
 
-        if (countdownInterval) clearInterval(countdownInterval);
-
-        countdownInterval = setInterval(() => {
+        timerInterval = setInterval(() => {
             counter--;
             if (counter > 0) {
-                skipBtn.textContent = `پەڕینەوە دوای (${counter})`;
+                skipBtn.innerText = `پەڕینەوە دوای (${counter})`;
             } else {
-                clearInterval(countdownInterval);
-                skipBtn.textContent = 'پەڕینەوە لە ڕیکلام »';
+                // کات تەواو بوو
+                clearInterval(timerInterval);
+                skipBtn.innerText = 'پەڕینەوە لە ڕیکلام »';
                 skipBtn.disabled = false;
+                
+                // ئێستا دەتوانرێت کلیک بکرێت
             }
         }, 1000);
     }
 
-    function skipAd() {
-        if (!isAdMode) return;
+    // فەنکشنی گۆڕین بۆ فیلمی سەرەکی
+    function loadMovie() {
+        // ڕاگرتنی هەر تایمەرێک ئەگەر مابێت
+        clearInterval(timerInterval);
         
-        clearInterval(countdownInterval);
-        isAdMode = false;
+        // گۆڕینی دۆخ
+        currentState = 'movie';
         
-        // گەڕاندنەوەی دیزاینی ئاسایی
-        container.classList.remove('ad-active');
-        adOverlay.style.display = 'none';
+        // شاردنەوەی دوگمە و لابردنی ستایلی ڕیکلام
+        skipOverlay.style.display = 'none';
+        container.classList.remove('ad-mode');
+        
+        // گۆڕینی لینک بۆ فیلمە ئەسڵییەکە
+        player.source = {
+            type: 'video',
+            sources: [
+                { src: MOVIE_URL, type: 'video/mp4' }
+            ]
+        };
 
-        // گەڕانەوە بۆ فیلمە ئەسڵییەکە
-        videoElement.src = MOVIE_URL;
-        videoElement.load();
-        videoElement.play();
+        // لێدانی فیلمەکە
+        setTimeout(() => {
+            player.play();
+        }, 200);
     }
 
+    // ڕووداوی کلیک لەسەر دوگمەی پەڕینەوە
     skipBtn.addEventListener('click', (e) => {
-        // ڕێگری دەکەین لەوەی کلیکەکە بگاتە پلەیەرەکە
+        // زۆر گرنگ: ڕێگری دەکات کلیکەکە بگوازرێتەوە بۆ خوارەوە
         e.stopPropagation(); 
-        skipAd();
+        
+        // جێبەجێکردنی گۆڕینەکە
+        loadMovie();
     });
 
 </script>

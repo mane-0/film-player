@@ -1,91 +1,121 @@
-<!-- سەرەتا ستایلەکان لێرە دادەنرێن -->
-<style>
-    :root {
-        --plyr-color-main: #e50914;
-    }
-    #player-container {
-        position: fixed; 
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #000;
-        z-index: 9999999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    #player-container .plyr {
-        width: 100%;
-        height: 100%;
-        max-width: 95vw;
-        max-height: 95vh;
-    }
-    #player-container .ad-overlay {
-        position: absolute;
-        bottom: 70px; 
-        right: 20px; 
-        z-index: 10;
-        display: none; 
-        font-family: sans-serif;
-    }
-    #player-container #skip-ad-button {
-        background-color: rgba(0,0,0,0.7);
-        color: white;
-        border: 1px solid rgba(255,255,255,0.5);
-        padding: 8px 15px;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-    #player-container #skip-ad-button:disabled {
-        cursor: not-allowed;
-        opacity: 0.8;
-    }
-    #player-container.ad-mode .plyr__progress input {
-        pointer-events: none;
-    }
-</style>
-
-<!-- دواتر، چوارچێوە و پلەیەرەکە -->
-<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Kurd Movie Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Plyr CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; height: 100vh; }
+        
+        :root {
+            --plyr-color-main: #e50914;
+        }
+        #player-container {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #player-container .plyr {
+            width: 100%;
+            height: 100%;
+        }
+        #player-container .ad-overlay {
+            position: absolute;
+            bottom: 70px; 
+            right: 20px; 
+            z-index: 10;
+            display: none; 
+            font-family: sans-serif;
+        }
+        #player-container #skip-ad-button {
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #player-container #skip-ad-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        #player-container.ad-mode .plyr__progress input {
+            pointer-events: none;
+        }
+        /* پەیامی هەڵە */
+        .error-msg { color: white; text-align: center; font-family: sans-serif; }
+    </style>
+</head>
+<body>
 
 <div id="player-container">
-    <video id="player" playsinline controls 
-           poster="https://i.postimg.cc/pybMsYh3/0x0.webp"></video>
+    <video id="player" playsinline controls crossorigin poster="https://i.postimg.cc/pybMsYh3/0x0.webp"></video>
     
     <div class="ad-overlay">
         <button id="skip-ad-button" disabled>تکایە چاوەڕێ بکە...</button>
     </div>
 </div>
 
-<!-- لە کۆتاییدا سکریپتەکان -->
-<script src="https://cdn.plyr.io/3.7.8/plyr.js" defer></script>
+<!-- Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        
+        // ١. وەرگرتنی لینکەکە لە URLـەوە (Dynamic URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieUrl = urlParams.get('url');
+
+        // ئەگەر لینک نەبوو، هیچ مەکە یان پەیام بدە
+        if (!movieUrl) {
+            document.getElementById('player-container').innerHTML = '<h3 class="error-msg">هیچ لینکێک نەدۆزرایەوە</h3>';
+            return;
+        }
+
+        // ============================================================
+        // ٢. لێرە لینکی ڕیکلامەکەی خۆت دابنێ (زۆر گرنگە)
+        // ئێستا لینکێکی تاقیکارییە، تکایە بیگۆڕە بۆ هی خۆت
+        const MY_AD_URL = 'https://ia801602.us.archive.org/11/items/Rick_Astley_Never_Gonna_Give_You_Up/Rick_Astley_Never_Gonna_Give_You_Up.mp4'; 
+        // ============================================================
+
         var wrapper = document.querySelector('#player-container');
         var playerElement = document.getElementById('player');
-        if (!playerElement) return;
+
+        // سەرەتا لینکی فیلمە ئەسڵییەکە دەخەینە ناو پلەیەرەکەوە
+        playerElement.querySelector('source') ? playerElement.querySelector('source').src = movieUrl : playerElement.src = movieUrl;
 
         var player = new Plyr(playerElement, {
             settings: ['quality', 'speed'],
-            keyboard: { focused: true, global: true }
+            keyboard: { focused: true, global: true },
+            controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen', 'settings']
         });
 
-        // --- شوێنی گۆڕانکاری ڤیدیۆکان ---
-        
-        // تێبینی: دڵنیابەرەوە AD_VIDEO_URL پێشتر پێناسە کرابێت یان لینکەکەی لێرە دابنێیت
-        var adVideoSource = { type: 'video', sources: [{ src: typeof AD_VIDEO_URL !== 'undefined' ? AD_VIDEO_URL : '', type: 'video/mp4' }] };
+        // پێناسەکردنی سەرچاوەکان
+        var adVideoSource = { 
+            type: 'video', 
+            sources: [{ src: MY_AD_URL, type: 'video/mp4' }] 
+        };
         
         var mainVideoSource = {
-            type: 'video', title: 'ڤیدیۆی سەرەکی',
+            type: 'video', 
+            title: 'Main Movie',
             sources: [
-                { src: 'https://ia800207.us.archive.org/15/items/in-good-hands-2-2024-1080p-blluray/In.Good.Hands.2.2024.1080p.blluray.mp4', type: 'video/mp4', size: 1080 },
-                { src: 'https://ia800207.us.archive.org/15/items/in-good-hands-2-2024-1080p-blluray/In.Good.Hands.2.2024.1080p.blluray.mp4', type: 'video/mp4', size: 720 },
+                { src: movieUrl, type: 'video/mp4' } // لێرە لینکە داینامیکییەکە بەکاردێت
             ],
             poster: 'https://i.postimg.cc/pybMsYh3/0x0.webp',
         };
-        // ---------------------------------
-        
+
         var skipButton = document.querySelector('#player-container #skip-ad-button');
         var adOverlay = document.querySelector('#player-container .ad-overlay');
         var isAdPlaying = false;
@@ -105,8 +135,13 @@
             wrapper.classList.remove('ad-mode');
             adOverlay.style.display = 'none';
             
+            // گۆڕینەوە بۆ فیلمە سەرەکییە
             player.source = mainVideoSource;
-            player.play();
+            
+            // دڵنیابوونەوە لەوەی دوای گۆڕین دەست دەکات بە پەخش
+            setTimeout(() => {
+                player.play();
+            }, 200);
         }
 
         player.on('play', function() {
@@ -117,11 +152,11 @@
                 wrapper.classList.add('ad-mode');
                 adOverlay.style.display = 'block';
 
+                // لێدانی ڕیکلام
                 player.source = adVideoSource;
-                
                 player.play();
                 
-                var countdown = 5;
+                var countdown = 5; // ژمارەی چرکەکان لێرە دیاری بکە
                 skipButton.textContent = `پەڕینەوە دوای (${countdown})`;
                 skipButton.disabled = true;
             }
@@ -129,7 +164,8 @@
 
         player.on('playing', function() {
             if (isAdPlaying && !countdownInterval) {
-                var countdown = parseInt(skipButton.textContent.match(/\d+/)) || 5;
+                var countdownText = skipButton.textContent.match(/\d+/);
+                var countdown = countdownText ? parseInt(countdownText[0]) : 5;
                 
                 countdownInterval = setInterval(function() {
                     countdown--;
@@ -158,3 +194,6 @@
         skipButton.addEventListener('click', switchToMainVideo);
     });
 </script>
+
+</body>
+</html>

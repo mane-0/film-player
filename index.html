@@ -3,459 +3,343 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurd-Flix Player</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Red Player Pro</title>
+    <!-- وەشانی جێگیری Tailwind CSS بۆ ئەوەی لە GitHub کێشەی نەبێت -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        /* فۆنت */
+        @import url('https://fonts.googleapis.com/css2?family=Rudaw&display=swap');
         
         body {
-            font-family: 'Vazirmatn', sans-serif;
-            background-color: #000;
-            color: white;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f0f0f;
         }
 
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 1200px; 
-            aspect-ratio: 16/9;
-            background: #000;
-            overflow: hidden;
-            group: group;
+        /* ستایلی تایبەت بۆ ڕاکێشەرەکان (Sliders) */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
         }
-
-        .video-container.fullscreen {
-            max-width: 100%;
-            width: 100vw;
-            height: 100vh;
-            aspect-ratio: unset;
-        }
-
-        /* Controls Overlay */
-        .controls-overlay {
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .video-container:hover .controls-overlay,
-        .video-container.paused .controls-overlay {
-            opacity: 1;
-        }
-
-        /* Progress Bar */
-        .progress-range {
+        
+        input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 4px;
-            border-radius: 2px;
-            background: rgba(255, 255, 255, 0.1); /* Lighter background to see buffer */
-            background-image: linear-gradient(#e50914, #e50914);
-            background-repeat: no-repeat;
-            background-size: 0% 100%;
-            transition: height 0.1s;
-            cursor: pointer;
-        }
-
-        .progress-range:hover {
-            height: 6px;
-        }
-
-        .progress-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 12px;
-            width: 12px;
+            height: 14px;
+            width: 14px;
             border-radius: 50%;
-            background: #e50914;
+            background: #ef4444; /* Red-500 */
             cursor: pointer;
-            box-shadow: 0 0 2px 0 #555;
-            transition: transform 0.1s;
-            transform: scale(0);
+            margin-top: -5px; 
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
 
-        .progress-range:hover::-webkit-slider-thumb {
-            transform: scale(1.5);
-        }
-
-        /* Volume Slider */
-        .volume-range {
-            -webkit-appearance: none;
-            background: transparent;
-            cursor: pointer;
-            width: 0;
-            opacity: 0;
-            transition: all 0.3s ease;
-            transform-origin: right;
-        }
-
-        .volume-container:hover .volume-range {
-            width: 80px;
-            opacity: 1;
-            margin-right: 8px;
-        }
-
-        .volume-range::-webkit-slider-runnable-track {
+        input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
-            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            background: #4b5563;
             border-radius: 2px;
         }
-
-        .volume-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 12px;
-            width: 12px;
-            border-radius: 50%;
-            background: white;
-            margin-top: -4px;
+        
+        /* شاردنەوەی کۆنتڕۆڵەکان */
+        .controls-hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
         }
 
-        /* Loader */
-        .loader {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid #e50914;
+        /* ئەنیمەیشنی لۆدینگ */
+        .spinner {
             width: 50px;
             height: 50px;
-            -webkit-animation: spin 1s linear infinite;
-            animation: spin 1s linear infinite;
+            border: 5px solid rgba(239, 68, 68, 0.3);
+            border-radius: 50%;
+            border-top-color: #ef4444;
+            animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .big-play-btn {
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .big-play-btn:active {
-            transform: translate(-50%, -50%) scale(0.9);
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body>
+<body class="flex items-center justify-center h-screen w-screen overflow-hidden bg-black text-white">
 
-    <div class="video-container relative group paused" id="video-wrapper">
-        <!-- Main Video -->
+    <!-- Container -->
+    <div id="player-container" class="relative w-full max-w-4xl aspect-video bg-black shadow-2xl shadow-red-900/20 rounded-xl overflow-hidden group select-none">
+        
+        <!-- Video Source (Google's Reliable Server) -->
         <video 
-            id="main-video" 
-            class="w-full h-full object-cover cursor-pointer" 
-            poster="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop"
-            src="https://ia800207.us.archive.org/15/items/in-good-hands-2-2024-1080p-blluray/In.Good.Hands.2.2024.1080p.blluray.ia.mp4">
+            id="video" 
+            class="w-full h-full object-cover"
+            poster="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/TearsOfSteel.jpg"
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4">
         </video>
 
         <!-- Loading Spinner -->
-        <div id="loader" class="loader absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden z-20"></div>
-
-        <!-- Big Center Play Button -->
-        <div id="center-play-btn" class="big-play-btn absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 cursor-pointer bg-black/50 p-6 rounded-full hover:bg-black/70 transition backdrop-blur-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="white" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 translate-x-1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 0 1 0 1.971l-11.54 6.347a1.125 1.125 0 0 1-1.667-.985V5.653Z" />
-            </svg>
+        <div id="loader" class="absolute inset-0 flex items-center justify-center bg-black/50 z-10 hidden">
+            <div class="spinner"></div>
         </div>
 
-        <!-- Controls Overlay -->
-        <div class="controls-overlay absolute bottom-0 left-0 right-0 px-4 pb-4 pt-16 flex flex-col gap-2 z-20">
+        <!-- Big Play Button (Center) -->
+        <div id="big-play-btn" class="absolute inset-0 flex items-center justify-center z-0 cursor-pointer bg-black/20 hover:bg-black/10 transition">
+            <div class="bg-red-600/90 text-white p-6 rounded-full shadow-lg shadow-red-600/50 backdrop-blur-sm transform transition hover:scale-110 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 translate-x-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Floating Controls Bar -->
+        <div id="controls" class="absolute bottom-4 left-4 right-4 bg-zinc-900/90 backdrop-blur-md rounded-2xl p-3 flex flex-col gap-2 transition-all duration-300 z-20 shadow-lg border border-white/10 controls-hidden group-hover:opacity-100 group-hover:transform-none group-hover:pointer-events-auto">
             
             <!-- Progress Bar -->
-            <div class="w-full flex items-center group/progress relative h-4 cursor-pointer">
-                <!-- Buffered Bar -->
-                <div id="buffer-bar" class="absolute h-1 bg-white/40 rounded-full top-1/2 transform -translate-y-1/2 z-10 pointer-events-none transition-all duration-200" style="width: 0%"></div>
-                
-                <input type="range" id="seek-bar" class="progress-range w-full absolute z-20" value="0" min="0" max="100" step="0.1">
+            <div class="w-full flex items-center gap-3">
+                <span id="current-time" class="text-xs font-mono text-gray-300 w-10 text-center">0:00</span>
+                <div class="relative w-full h-1 group/bar">
+                    <div id="buffer-bar" class="absolute top-0 left-0 h-full bg-white/20 rounded w-0"></div>
+                    <div id="progress-fill" class="absolute top-0 left-0 h-full bg-red-600 rounded w-0 shadow-[0_0_10px_rgba(220,38,38,0.7)]"></div>
+                    <input type="range" id="seek-slider" min="0" max="100" value="0" step="0.1" class="absolute -top-1.5 w-full opacity-0 hover:opacity-100 cursor-pointer z-10 h-4">
+                </div>
+                <span id="duration" class="text-xs font-mono text-gray-300 w-10 text-center">0:00</span>
             </div>
 
             <!-- Buttons Row -->
-            <div class="flex items-center justify-between mt-1">
+            <div class="flex items-center justify-between px-1">
                 
-                <!-- Left Controls -->
                 <div class="flex items-center gap-4">
                     <!-- Play/Pause -->
-                    <button id="play-btn" class="hover:text-red-500 transition">
-                        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-8 h-8">
-                            <path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 0 1 0 1.971l-11.54 6.347a1.125 1.125 0 0 1-1.667-.985V5.653Z" />
-                        </svg>
-                        <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-8 h-8 hidden">
-                            <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-
-                    <!-- Skip Buttons -->
-                    <button id="rewind-btn" class="hover:text-gray-300 transition group relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                        </svg>
-                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 transition">10s</span>
-                    </button>
-                    <button id="forward-btn" class="hover:text-gray-300 transition group relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
-                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 transition">10s</span>
+                    <button id="play-pause-btn" class="text-white hover:text-red-500 transition">
+                        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </button>
 
                     <!-- Volume -->
-                    <div class="flex items-center volume-container">
-                        <button id="mute-btn" class="hover:text-gray-300 transition">
-                            <svg id="volume-high-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                            </svg>
-                            <svg id="volume-muted-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 hidden">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                            </svg>
+                    <div class="flex items-center gap-2 group/vol">
+                        <button id="mute-btn" class="text-gray-300 hover:text-white">
+                            <svg id="vol-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                            <svg id="mute-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
                         </button>
-                        <input type="range" id="volume-bar" class="volume-range" value="1" min="0" max="1" step="0.1">
-                    </div>
-
-                    <!-- Time -->
-                    <div class="text-xs font-mono text-gray-300">
-                        <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="1" class="w-0 group-hover/vol:w-20 transition-all duration-300 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer">
                     </div>
                 </div>
 
-                <!-- Right Controls -->
                 <div class="flex items-center gap-4">
-                    <span class="text-xs font-bold text-red-500 hidden md:inline tracking-widest">KURD-FLIX</span>
+                    <!-- Speed Control -->
+                    <button id="speed-btn" class="text-xs font-bold text-gray-400 hover:text-red-500 border border-gray-600 rounded px-2 py-1 transition">1x</button>
                     
-                    <!-- Settings -->
-                    <button class="hover:text-gray-300 transition rotate-0 hover:rotate-90 duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        </svg>
-                    </button>
-                    
-                    <!-- Picture in Picture (New Feature) -->
-                    <button id="pip-btn" class="hover:text-white transition" title="Picture in Picture">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    <!-- PIP -->
+                    <button id="pip-btn" class="text-gray-300 hover:text-white" title="وێنە لەناو وێنە">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                     </button>
 
                     <!-- Fullscreen -->
-                    <button id="fullscreen-btn" class="hover:text-white transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    <button id="fullscreen-btn" class="text-gray-300 hover:text-red-500 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                         </svg>
                     </button>
                 </div>
+
             </div>
         </div>
     </div>
 
     <script>
-        const videoWrapper = document.getElementById('video-wrapper');
-        const video = document.getElementById('main-video');
-        const playBtn = document.getElementById('play-btn');
-        const centerPlayBtn = document.getElementById('center-play-btn');
+        // Elements
+        const container = document.getElementById('player-container');
+        const video = document.getElementById('video');
+        const controls = document.getElementById('controls');
+        const playBtn = document.getElementById('play-pause-btn');
+        const bigPlayBtn = document.getElementById('big-play-btn');
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
-        const seekBar = document.getElementById('seek-bar');
+        const loader = document.getElementById('loader');
+        const seekSlider = document.getElementById('seek-slider');
+        const progressFill = document.getElementById('progress-fill');
         const bufferBar = document.getElementById('buffer-bar');
-        const volumeBar = document.getElementById('volume-bar');
-        const muteBtn = document.getElementById('mute-btn');
-        const volumeHighIcon = document.getElementById('volume-high-icon');
-        const volumeMutedIcon = document.getElementById('volume-muted-icon');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        const pipBtn = document.getElementById('pip-btn');
         const currentTimeEl = document.getElementById('current-time');
         const durationEl = document.getElementById('duration');
-        const loader = document.getElementById('loader');
-        const forwardBtn = document.getElementById('forward-btn');
-        const rewindBtn = document.getElementById('rewind-btn');
+        const volumeSlider = document.getElementById('volume-slider');
+        const muteBtn = document.getElementById('mute-btn');
+        const volIcon = document.getElementById('vol-icon');
+        const muteIcon = document.getElementById('mute-icon');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const speedBtn = document.getElementById('speed-btn');
+        const pipBtn = document.getElementById('pip-btn');
 
-        // State variables
         let isPlaying = false;
-        let isDragging = false; // Fix dragging conflict
-        let lastVolume = 1;
+        let isDragging = false;
+        let hideControlsTimeout;
 
-        // Functions
-        const togglePlay = () => {
+        // --- Functions ---
+
+        // Play / Pause
+        function togglePlay() {
             if (video.paused) {
                 video.play();
-            } else {
-                video.pause();
-            }
-        };
-
-        const updatePlayIcon = () => {
-            if (video.paused) {
-                playIcon.classList.remove('hidden');
-                pauseIcon.classList.add('hidden');
-                centerPlayBtn.classList.remove('hidden');
-                videoWrapper.classList.add('paused');
-            } else {
+                isPlaying = true;
                 playIcon.classList.add('hidden');
                 pauseIcon.classList.remove('hidden');
-                centerPlayBtn.classList.add('hidden');
-                videoWrapper.classList.remove('paused');
+                bigPlayBtn.classList.add('hidden');
+            } else {
+                video.pause();
+                isPlaying = false;
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                bigPlayBtn.classList.remove('hidden');
+                showControls(); // Show controls when paused
             }
-        };
+        }
 
-        const formatTime = (time) => {
-            if (isNaN(time)) return "0:00";
+        // Format Time (mm:ss)
+        function formatTime(time) {
             const minutes = Math.floor(time / 60);
             const seconds = Math.floor(time % 60);
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        };
+        }
 
-        const updateProgress = () => {
-            if (isDragging) return; // Stop update if user is dragging
-            const value = (video.currentTime / video.duration) * 100;
-            if (!isNaN(value)) {
-                seekBar.value = value;
-                seekBar.style.backgroundSize = `${value}% 100%`;
-                currentTimeEl.textContent = formatTime(video.currentTime);
+        // Update Progress
+        function updateProgress() {
+            if (!isDragging) {
+                const percent = (video.currentTime / video.duration) * 100;
+                seekSlider.value = isNaN(percent) ? 0 : percent;
+                progressFill.style.width = `${isNaN(percent) ? 0 : percent}%`;
+                currentTimeEl.innerText = formatTime(video.currentTime);
             }
-            updateBuffer();
-        };
-
-        const updateBuffer = () => {
-            if (video.buffered.length > 0) {
+            
+            // Update Buffer
+            if(video.buffered.length > 0) {
                 const bufferedEnd = video.buffered.end(video.buffered.length - 1);
                 const duration = video.duration;
-                if (duration > 0) {
-                    const width = (bufferedEnd / duration) * 100;
-                    bufferBar.style.width = `${width}%`;
+                if(duration > 0) {
+                    bufferBar.style.width = `${(bufferedEnd / duration) * 100}%`;
                 }
             }
-        };
+        }
 
-        const setVideoProgress = () => {
-            const time = (seekBar.value / 100) * video.duration;
+        // Seek Video
+        function setVideoProgress() {
+            const time = (seekSlider.value / 100) * video.duration;
             video.currentTime = time;
-        };
+            progressFill.style.width = `${seekSlider.value}%`;
+        }
 
-        const updateVolumeIcon = () => {
-            if (video.muted || video.volume === 0) {
-                volumeHighIcon.classList.add('hidden');
-                volumeMutedIcon.classList.remove('hidden');
-            } else {
-                volumeHighIcon.classList.remove('hidden');
-                volumeMutedIcon.classList.add('hidden');
-            }
-        };
-
-        const updateVolume = () => {
-            if (video.muted) video.muted = false;
-            video.volume = volumeBar.value;
-            updateVolumeIcon();
-        };
-
-        const toggleMute = () => {
-            if (video.muted) {
+        // Volume
+        function updateVolume() {
+            if(video.muted) {
                 video.muted = false;
-                video.volume = lastVolume || 1;
-                volumeBar.value = video.volume;
-            } else {
-                lastVolume = video.volume;
-                video.muted = true;
-                volumeBar.value = 0;
+                muteIcon.classList.add('hidden');
+                volIcon.classList.remove('hidden');
             }
-            updateVolumeIcon();
-        };
+            video.volume = volumeSlider.value;
+            if(video.volume === 0) {
+                muteIcon.classList.remove('hidden');
+                volIcon.classList.add('hidden');
+            }
+        }
 
-        const toggleFullscreen = () => {
+        function toggleMute() {
+            video.muted = !video.muted;
+            if(video.muted) {
+                volumeSlider.value = 0;
+                muteIcon.classList.remove('hidden');
+                volIcon.classList.add('hidden');
+            } else {
+                volumeSlider.value = 1;
+                video.volume = 1;
+                muteIcon.classList.add('hidden');
+                volIcon.classList.remove('hidden');
+            }
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
             if (!document.fullscreenElement) {
-                if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
-                else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
-                videoWrapper.classList.add('fullscreen');
+                if(container.requestFullscreen) container.requestFullscreen();
+                else if(container.webkitRequestFullscreen) container.webkitRequestFullscreen(); // Safari
             } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-                videoWrapper.classList.remove('fullscreen');
+                if(document.exitFullscreen) document.exitFullscreen();
             }
-        };
+        }
 
-        const togglePip = async () => {
+        // Speed Control
+        function changeSpeed() {
+            let currentRate = video.playbackRate;
+            if (currentRate === 1) video.playbackRate = 1.5;
+            else if (currentRate === 1.5) video.playbackRate = 2;
+            else video.playbackRate = 1;
+            
+            speedBtn.innerText = video.playbackRate + 'x';
+        }
+
+        // PIP
+        async function togglePip() {
             if (document.pictureInPictureElement) {
                 await document.exitPictureInPicture();
             } else if (document.pictureInPictureEnabled) {
                 await video.requestPictureInPicture();
             }
-        };
+        }
 
-        // Event Listeners
-        video.addEventListener('play', updatePlayIcon);
-        video.addEventListener('pause', updatePlayIcon);
-        video.addEventListener('click', togglePlay);
-        video.addEventListener('dblclick', toggleFullscreen); // New Feature
+        // Auto Hide Controls
+        function showControls() {
+            controls.classList.remove('controls-hidden');
+            container.style.cursor = 'default';
+            clearTimeout(hideControlsTimeout);
+            if (!video.paused) {
+                hideControlsTimeout = setTimeout(() => {
+                    controls.classList.add('controls-hidden');
+                    container.style.cursor = 'none';
+                }, 3000);
+            }
+        }
+
+        // --- Event Listeners ---
         
         playBtn.addEventListener('click', togglePlay);
-        centerPlayBtn.addEventListener('click', togglePlay);
+        bigPlayBtn.addEventListener('click', togglePlay);
+        video.addEventListener('click', togglePlay);
         
         video.addEventListener('timeupdate', updateProgress);
-        video.addEventListener('progress', updateBuffer); // Update buffer while loading
-        
         video.addEventListener('loadedmetadata', () => {
-            durationEl.textContent = formatTime(video.duration);
+            durationEl.innerText = formatTime(video.duration);
         });
         
         video.addEventListener('waiting', () => loader.classList.remove('hidden'));
         video.addEventListener('playing', () => loader.classList.add('hidden'));
-        
-        // Seek Bar logic improvements
-        seekBar.addEventListener('input', () => {
-            setVideoProgress();
-            // Update visual while dragging
-            const value = seekBar.value;
-            seekBar.style.backgroundSize = `${value}% 100%`;
-            currentTimeEl.textContent = formatTime((value / 100) * video.duration);
-        });
-        seekBar.addEventListener('mousedown', () => isDragging = true);
-        seekBar.addEventListener('mouseup', () => isDragging = false);
-        seekBar.addEventListener('touchstart', () => isDragging = true);
-        seekBar.addEventListener('touchend', () => isDragging = false);
 
-        volumeBar.addEventListener('input', updateVolume);
-        muteBtn.addEventListener('click', toggleMute); // Changed to click
+        seekSlider.addEventListener('mousedown', () => isDragging = true);
+        seekSlider.addEventListener('mouseup', () => { isDragging = false; setVideoProgress(); });
+        seekSlider.addEventListener('input', () => {
+             // Visual update only while dragging
+             progressFill.style.width = `${seekSlider.value}%`;
+             currentTimeEl.innerText = formatTime((seekSlider.value / 100) * video.duration);
+        });
+
+        volumeSlider.addEventListener('input', updateVolume);
+        muteBtn.addEventListener('click', toggleMute);
         fullscreenBtn.addEventListener('click', toggleFullscreen);
+        speedBtn.addEventListener('click', changeSpeed);
         pipBtn.addEventListener('click', togglePip);
 
-        forwardBtn.addEventListener('click', () => video.currentTime += 10);
-        rewindBtn.addEventListener('click', () => video.currentTime -= 10);
-        
+        // Mouse movement to show/hide controls
+        container.addEventListener('mousemove', showControls);
+        container.addEventListener('mouseleave', () => {
+            if(!video.paused) controls.classList.add('controls-hidden');
+        });
+
+        // Double Click for Fullscreen
+        container.addEventListener('dblclick', toggleFullscreen);
+
         // Keyboard Shortcuts
         document.addEventListener('keydown', (e) => {
-            const tagName = document.activeElement.tagName.toLowerCase();
-            if (tagName === 'input') return; // Ignore if typing in an input
-
-            switch(e.code) {
-                case 'Space':
-                case 'KeyK':
-                    e.preventDefault();
-                    togglePlay();
-                    break;
-                case 'ArrowRight':
-                    video.currentTime += 5;
-                    break;
-                case 'ArrowLeft':
-                    video.currentTime -= 5;
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    video.volume = Math.min(1, video.volume + 0.1);
-                    volumeBar.value = video.volume;
-                    updateVolumeIcon();
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    video.volume = Math.max(0, video.volume - 0.1);
-                    volumeBar.value = video.volume;
-                    updateVolumeIcon();
-                    break;
-                case 'KeyF':
-                    toggleFullscreen();
-                    break;
-                case 'KeyM':
-                    toggleMute();
-                    break;
-            }
+            if(e.code === 'Space' || e.code === 'KeyK') { e.preventDefault(); togglePlay(); }
+            if(e.code === 'ArrowRight') { video.currentTime += 5; showControls(); }
+            if(e.code === 'ArrowLeft') { video.currentTime -= 5; showControls(); }
+            if(e.code === 'KeyF') toggleFullscreen();
+            if(e.code === 'KeyM') toggleMute();
         });
 
     </script>

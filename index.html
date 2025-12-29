@@ -23,14 +23,13 @@
         .video-container {
             position: relative;
             width: 100%;
-            max-width: 1200px; /* Or 100% for full window embed */
+            max-width: 1200px; 
             aspect-ratio: 16/9;
             background: #000;
             overflow: hidden;
             group: group;
         }
 
-        /* Fullscreen override */
         .video-container.fullscreen {
             max-width: 100%;
             width: 100vw;
@@ -55,7 +54,7 @@
             -webkit-appearance: none;
             height: 4px;
             border-radius: 2px;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1); /* Lighter background to see buffer */
             background-image: linear-gradient(#e50914, #e50914);
             background-repeat: no-repeat;
             background-size: 0% 100%;
@@ -80,7 +79,7 @@
         }
 
         .progress-range:hover::-webkit-slider-thumb {
-            transform: scale(1);
+            transform: scale(1.5);
         }
 
         /* Volume Slider */
@@ -123,7 +122,7 @@
             border-top: 4px solid #e50914;
             width: 50px;
             height: 50px;
-            -webkit-animation: spin 1s linear infinite; /* Safari */
+            -webkit-animation: spin 1s linear infinite;
             animation: spin 1s linear infinite;
         }
 
@@ -132,7 +131,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Big Play Button Animation */
         .big-play-btn {
             transition: transform 0.2s, opacity 0.2s;
         }
@@ -143,14 +141,13 @@
 </head>
 <body>
 
-    <div class="video-container relative group" id="video-wrapper">
+    <div class="video-container relative group paused" id="video-wrapper">
         <!-- Main Video -->
         <video 
             id="main-video" 
             class="w-full h-full object-cover cursor-pointer" 
             poster="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop"
             src="https://ia800207.us.archive.org/15/items/in-good-hands-2-2024-1080p-blluray/In.Good.Hands.2.2024.1080p.blluray.ia.mp4">
-            تکایە وێبگەڕەکەت نوێ بکەرەوە بۆ بینینی ڤیدیۆ.
         </video>
 
         <!-- Loading Spinner -->
@@ -167,10 +164,11 @@
         <div class="controls-overlay absolute bottom-0 left-0 right-0 px-4 pb-4 pt-16 flex flex-col gap-2 z-20">
             
             <!-- Progress Bar -->
-            <div class="w-full flex items-center group/progress relative h-4">
+            <div class="w-full flex items-center group/progress relative h-4 cursor-pointer">
+                <!-- Buffered Bar -->
+                <div id="buffer-bar" class="absolute h-1 bg-white/40 rounded-full top-1/2 transform -translate-y-1/2 z-10 pointer-events-none transition-all duration-200" style="width: 0%"></div>
+                
                 <input type="range" id="seek-bar" class="progress-range w-full absolute z-20" value="0" min="0" max="100" step="0.1">
-                <!-- Buffered Bar (Visual only for now) -->
-                <div class="absolute w-full h-1 bg-white/20 rounded-full top-1/2 transform -translate-y-1/2 z-0"></div>
             </div>
 
             <!-- Buttons Row -->
@@ -223,13 +221,20 @@
 
                 <!-- Right Controls -->
                 <div class="flex items-center gap-4">
-                    <span class="text-xs font-bold text-red-500 hidden md:inline">KURD-FLIX</span>
+                    <span class="text-xs font-bold text-red-500 hidden md:inline tracking-widest">KURD-FLIX</span>
                     
-                    <!-- Settings (Mockup) -->
+                    <!-- Settings -->
                     <button class="hover:text-gray-300 transition rotate-0 hover:rotate-90 duration-300">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 0 1 1.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 0 1-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 0 1-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 0 1 .12-1.45l.773-.773a1.125 1.125 0 0 1 1.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894Z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Picture in Picture (New Feature) -->
+                    <button id="pip-btn" class="hover:text-white transition" title="Picture in Picture">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                         </svg>
                     </button>
 
@@ -252,51 +257,74 @@
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
         const seekBar = document.getElementById('seek-bar');
+        const bufferBar = document.getElementById('buffer-bar');
         const volumeBar = document.getElementById('volume-bar');
         const muteBtn = document.getElementById('mute-btn');
         const volumeHighIcon = document.getElementById('volume-high-icon');
         const volumeMutedIcon = document.getElementById('volume-muted-icon');
         const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const pipBtn = document.getElementById('pip-btn');
         const currentTimeEl = document.getElementById('current-time');
         const durationEl = document.getElementById('duration');
         const loader = document.getElementById('loader');
         const forwardBtn = document.getElementById('forward-btn');
         const rewindBtn = document.getElementById('rewind-btn');
 
-        // Initial States
+        // State variables
         let isPlaying = false;
-        
+        let isDragging = false; // Fix dragging conflict
+        let lastVolume = 1;
+
         // Functions
         const togglePlay = () => {
             if (video.paused) {
                 video.play();
-                isPlaying = true;
-                playIcon.classList.add('hidden');
-                pauseIcon.classList.remove('hidden');
-                centerPlayBtn.classList.add('hidden');
-                centerPlayBtn.classList.remove('scale-100');
-                videoWrapper.classList.remove('paused');
             } else {
                 video.pause();
-                isPlaying = false;
+            }
+        };
+
+        const updatePlayIcon = () => {
+            if (video.paused) {
                 playIcon.classList.remove('hidden');
                 pauseIcon.classList.add('hidden');
                 centerPlayBtn.classList.remove('hidden');
                 videoWrapper.classList.add('paused');
+            } else {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                centerPlayBtn.classList.add('hidden');
+                videoWrapper.classList.remove('paused');
             }
         };
 
         const formatTime = (time) => {
+            if (isNaN(time)) return "0:00";
             const minutes = Math.floor(time / 60);
             const seconds = Math.floor(time % 60);
             return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
         };
 
         const updateProgress = () => {
+            if (isDragging) return; // Stop update if user is dragging
             const value = (video.currentTime / video.duration) * 100;
-            seekBar.value = value;
-            seekBar.style.backgroundSize = `${value}% 100%`;
-            currentTimeEl.textContent = formatTime(video.currentTime);
+            if (!isNaN(value)) {
+                seekBar.value = value;
+                seekBar.style.backgroundSize = `${value}% 100%`;
+                currentTimeEl.textContent = formatTime(video.currentTime);
+            }
+            updateBuffer();
+        };
+
+        const updateBuffer = () => {
+            if (video.buffered.length > 0) {
+                const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+                const duration = video.duration;
+                if (duration > 0) {
+                    const width = (bufferedEnd / duration) * 100;
+                    bufferBar.style.width = `${width}%`;
+                }
+            }
         };
 
         const setVideoProgress = () => {
@@ -304,14 +332,8 @@
             video.currentTime = time;
         };
 
-        const updateVolume = () => {
-            if (video.muted) {
-                video.muted = false;
-                volumeHighIcon.classList.remove('hidden');
-                volumeMutedIcon.classList.add('hidden');
-            }
-            video.volume = volumeBar.value;
-            if (video.volume === 0) {
+        const updateVolumeIcon = () => {
+            if (video.muted || video.volume === 0) {
                 volumeHighIcon.classList.add('hidden');
                 volumeMutedIcon.classList.remove('hidden');
             } else {
@@ -320,81 +342,119 @@
             }
         };
 
+        const updateVolume = () => {
+            if (video.muted) video.muted = false;
+            video.volume = volumeBar.value;
+            updateVolumeIcon();
+        };
+
         const toggleMute = () => {
-            video.muted = !video.muted;
             if (video.muted) {
-                volumeBar.value = 0;
-                volumeHighIcon.classList.add('hidden');
-                volumeMutedIcon.classList.remove('hidden');
+                video.muted = false;
+                video.volume = lastVolume || 1;
+                volumeBar.value = video.volume;
             } else {
-                volumeBar.value = 1; // reset to full or previous
-                volumeHighIcon.classList.remove('hidden');
-                volumeMutedIcon.classList.add('hidden');
+                lastVolume = video.volume;
+                video.muted = true;
+                volumeBar.value = 0;
             }
+            updateVolumeIcon();
         };
 
         const toggleFullscreen = () => {
             if (!document.fullscreenElement) {
-                if (videoWrapper.requestFullscreen) {
-                    videoWrapper.requestFullscreen();
-                } else if (videoWrapper.webkitRequestFullscreen) {
-                    videoWrapper.webkitRequestFullscreen();
-                }
+                if (videoWrapper.requestFullscreen) videoWrapper.requestFullscreen();
+                else if (videoWrapper.webkitRequestFullscreen) videoWrapper.webkitRequestFullscreen();
                 videoWrapper.classList.add('fullscreen');
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
                 videoWrapper.classList.remove('fullscreen');
             }
         };
 
+        const togglePip = async () => {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else if (document.pictureInPictureEnabled) {
+                await video.requestPictureInPicture();
+            }
+        };
+
         // Event Listeners
+        video.addEventListener('play', updatePlayIcon);
+        video.addEventListener('pause', updatePlayIcon);
         video.addEventListener('click', togglePlay);
+        video.addEventListener('dblclick', toggleFullscreen); // New Feature
+        
         playBtn.addEventListener('click', togglePlay);
         centerPlayBtn.addEventListener('click', togglePlay);
         
         video.addEventListener('timeupdate', updateProgress);
+        video.addEventListener('progress', updateBuffer); // Update buffer while loading
+        
         video.addEventListener('loadedmetadata', () => {
-            durationEl.textContent = formatTime(video.duration);
             durationEl.textContent = formatTime(video.duration);
         });
         
         video.addEventListener('waiting', () => loader.classList.remove('hidden'));
         video.addEventListener('playing', () => loader.classList.add('hidden'));
         
-        seekBar.addEventListener('input', setVideoProgress);
+        // Seek Bar logic improvements
+        seekBar.addEventListener('input', () => {
+            setVideoProgress();
+            // Update visual while dragging
+            const value = seekBar.value;
+            seekBar.style.backgroundSize = `${value}% 100%`;
+            currentTimeEl.textContent = formatTime((value / 100) * video.duration);
+        });
+        seekBar.addEventListener('mousedown', () => isDragging = true);
+        seekBar.addEventListener('mouseup', () => isDragging = false);
+        seekBar.addEventListener('touchstart', () => isDragging = true);
+        seekBar.addEventListener('touchend', () => isDragging = false);
+
         volumeBar.addEventListener('input', updateVolume);
-        muteBtn.addEventListener('input', toggleMute);
+        muteBtn.addEventListener('click', toggleMute); // Changed to click
         fullscreenBtn.addEventListener('click', toggleFullscreen);
+        pipBtn.addEventListener('click', togglePip);
 
-        forwardBtn.addEventListener('click', () => {
-            video.currentTime += 10;
-        });
-
-        rewindBtn.addEventListener('click', () => {
-            video.currentTime -= 10;
-        });
+        forwardBtn.addEventListener('click', () => video.currentTime += 10);
+        rewindBtn.addEventListener('click', () => video.currentTime -= 10);
         
         // Keyboard Shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                togglePlay();
-            } else if (e.code === 'ArrowRight') {
-                video.currentTime += 5;
-            } else if (e.code === 'ArrowLeft') {
-                video.currentTime -= 5;
-            } else if (e.code === 'ArrowUp') {
-                e.preventDefault(); // Prevent page scroll
-                video.volume = Math.min(1, video.volume + 0.1);
-                volumeBar.value = video.volume;
-            } else if (e.code === 'ArrowDown') {
-                e.preventDefault(); // Prevent page scroll
-                video.volume = Math.max(0, video.volume - 0.1);
-                volumeBar.value = video.volume;
-            } else if (e.code === 'KeyF') {
-                toggleFullscreen();
+            const tagName = document.activeElement.tagName.toLowerCase();
+            if (tagName === 'input') return; // Ignore if typing in an input
+
+            switch(e.code) {
+                case 'Space':
+                case 'KeyK':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowRight':
+                    video.currentTime += 5;
+                    break;
+                case 'ArrowLeft':
+                    video.currentTime -= 5;
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    video.volume = Math.min(1, video.volume + 0.1);
+                    volumeBar.value = video.volume;
+                    updateVolumeIcon();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    video.volume = Math.max(0, video.volume - 0.1);
+                    volumeBar.value = video.volume;
+                    updateVolumeIcon();
+                    break;
+                case 'KeyF':
+                    toggleFullscreen();
+                    break;
+                case 'KeyM':
+                    toggleMute();
+                    break;
             }
         });
 
